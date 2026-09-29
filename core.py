@@ -8,6 +8,7 @@ from datetime import date, datetime, timezone
 PHASES = ['Contract', 'Procurement', 'Planning', 'Delivery', 'Acceptance', 'Billing', 'Closure']
 STATUSES = ['TODO', 'IN_PROGRESS', 'WAITING', 'BLOCKED', 'REVIEW', 'DONE']
 MILESTONE_STATUSES = [
+    '',
     'NOT_DUE', 'IN_PROGRESS', 'READY', 'DELIVERED',
     'WAITING_REPLY', 'WAITING_ACCEPTANCE', 'ACCEPTED', 'LATE', 'BLOCKED'
 ]
@@ -376,7 +377,8 @@ def validate_payment_percent(p):
 
 def payment_summary(p):
     total = round(sum(float(m.get('paymentPercent') or 0) for m in p.get('milestones', [])), 4)
-    contract_value = float(p.get('projectInfo', {}).get('contractValue') or 0)
+    raw_value = p.get('projectInfo', {}).get('contractValue')
+    contract_value = None if raw_value is None else float(raw_value)
     groups = {}
     for m in p.get('milestones', []):
         payment_no = str(m.get('paymentNo') or '').strip()
@@ -387,7 +389,7 @@ def payment_summary(p):
             groups[payment_no]['workNos'].append(m.get('workNo'))
     for item in groups.values():
         item['percent'] = round(item['percent'], 4)
-        item['amount'] = round(contract_value * item['percent'] / 100, 2)
+        item['amount'] = None if contract_value is None else round(contract_value * item['percent'] / 100, 2)
     return {
         'totalPercent': total,
         'remainingPercent': round(100 - total, 4),
@@ -397,6 +399,8 @@ def payment_summary(p):
     }
 
 def money_value(value):
+    if value is None or value == '':
+        return None
     try:
         number = float(value or 0)
     except (TypeError, ValueError):

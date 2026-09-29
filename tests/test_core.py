@@ -96,6 +96,17 @@ class WorkspaceTests(unittest.TestCase):
         with self.assertRaises(Problem):
             self.act('project_info',{'contractName':'Changed'},'editor')
 
+    def test_unspecified_contract_value_and_milestone_status(self):
+        self.act('project_info', {'contractValue': None})
+        self.act('milestone_add', {})
+        mid = self.w.state('owner')['projects'][0]['milestones'][0]['id']
+        for field, value in [('paymentNo', '1'), ('paymentPercent', 20), ('status', '')]:
+            self.act('milestone_cell', {'id': mid, 'field': field, 'value': value})
+        p = self.w.state('owner')['projects'][0]
+        self.assertEqual(p['milestones'][0]['status'], '')
+        self.assertEqual(p['paymentSummary']['totalPercent'], 20)
+        self.assertIsNone(p['paymentSummary']['groups']['1']['amount'])
+
     def test_nonfinite_financial_values_are_atomic(self):
         self.act('milestone_add', {})
         before = self.w.state('owner')['projects'][0]
