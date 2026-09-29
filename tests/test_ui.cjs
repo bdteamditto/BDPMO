@@ -128,3 +128,15 @@ test('Date edits retain ISO format after save and detail audit is not reported a
  assert.equal(context.el.value,'2026-10-09');
  assert.match(run("torEvent({action:'milestone_details',detail:'{}'})"),/แก้สถานะ/);
 });
+
+
+test('Validation failures stay visible inside the open dialog and allow retry',async()=>{
+ const {context,nodes,run}=app();
+ Object.assign(nodes,{'#dialog':{open:false,showModal(){this.open=true},close(){this.open=false}},'#modalForm':{},'#cancel':{},'#save':{},'#modalError':{}});
+ context.FormData=class { *[Symbol.iterator](){} };
+ run("modal('Evidence','',async()=>{throw Error('Evidence required')})");
+ await nodes['#modalForm'].onsubmit({preventDefault(){},target:{}});
+ assert.equal(nodes['#dialog'].open,true);
+ assert.equal(nodes['#modalError'].textContent,'Evidence required');
+ assert.equal(nodes['#save'].disabled,false);
+});

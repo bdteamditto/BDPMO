@@ -3,7 +3,7 @@
 Branch: `feat/tor-delivery-spreadsheet`, draft PR #2. No merge or production cutover.
 
 - **33 Python tests passed**: permissions, task lifecycle/dependencies, TOR edits, atomic bulk paste, payment allocation and rollback, audit, lifecycle modules, evidence rules, closure/reopening, back-to-back receipt allocation, record comments, cross-project reference rejection, Thai dates, delivery summaries, HTTP login/CSRF/logout and HTTP persistence across all new modules.
-- **7 JavaScript tests passed**: Read/Edit and VIEWER controls; derived payment/audit updates; failed-draft retention; newer typing preservation; overview 3/5 progress independent of finance/acceptance; every module/form rendered against real backend metadata; date-input normalization and detail audit labels.
+- **8 JavaScript tests passed**: Read/Edit and VIEWER controls; derived payment/audit updates; failed-draft retention; newer typing preservation; overview 3/5 progress independent of finance/acceptance; every module/form rendered against real backend metadata; date-input normalization and detail audit labels; visible dialog validation failures with retry.
 - JavaScript syntax and Git whitespace checks passed.
 - Frontend tests use a minimal document stub and backend-generated fixtures, not a browser. HTTP tests use a separate temporary database and server.
 - Actual preview database backed up before update. Its five milestones now have three DELIVERED, one IN_PROGRESS and one NOT_DUE, per user confirmation. Derived progress is 60%; accepted count is zero until evidence is supplied; allocated payment percentages total 100%, without implying cash received.
