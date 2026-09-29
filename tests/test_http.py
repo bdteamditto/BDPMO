@@ -68,6 +68,28 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(project()['paymentSummary'],saved['paymentSummary'])
         self.assertEqual(project()['events'],saved['events'])
 
+    def test_lifecycle_records_and_checklists_survive_http_reload(self):
+        from lifecycle import MODULES
+        status,h,_=self.request('/api/login',{'user':'tester','password':'long-test-password'})
+        self.assertEqual(status,200)
+        headers={'Cookie':h['Set-Cookie'].split(';')[0]}
+        getstate=lambda:json.loads(self.request('/api/state',headers=headers)[2])
+        headers['X-CSRF-Token']=getstate()['csrf']
+        self.assertEqual(self.request('/api/action',{'action':'create_project','name':'HTTP Lifecycle'},headers)[0],200)
+        p=next(p for p in getstate()['projects'] if p['name']=='HTTP Lifecycle')
+        for module,meta in MODULES.items():
+            values={f[0]:f[3][0] if f[2]=='select' else 'TODO' if f[2]=='status' else '' for f in meta['fields']}
+            values.update(title='Record '+module,owner='tester')
+            status,_,body=self.request('/api/action',{'action':'control','project':p['id'],'module':module,**values},headers)
+            self.assertEqual(status,200,body)
+        status,_,body=self.request('/api/action',{'action':'checklist','project':p['id'],'id':'project_open','status':'DONE','owner':'tester','evidence':'Opening approval'},headers)
+        self.assertEqual(status,200,body)
+        saved=next(x for x in getstate()['projects'] if x['id']==p['id'])
+        self.assertEqual(set(saved['controls']),set(MODULES))
+        self.assertEqual(saved['checks']['project_open']['evidence'],'Opening approval')
+        self.assertEqual(saved['events'][0]['action'],'checklist')
+        self.assertTrue(saved['closureBlockers'])
+
     def test_static_allowlist(self):
         self.assertEqual(self.request('/server.py')[0],404)
         status,h,b=self.request('/')
