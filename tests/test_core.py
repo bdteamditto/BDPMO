@@ -96,4 +96,16 @@ class WorkspaceTests(unittest.TestCase):
         with self.assertRaises(Problem):
             self.act('project_info',{'contractName':'Changed'},'editor')
 
+    def test_nonfinite_financial_values_are_atomic(self):
+        self.act('milestone_add', {})
+        before = self.w.state('owner')['projects'][0]
+        mid = before['milestones'][0]['id']
+        for value in ['NaN', 'Infinity', '-Infinity', float('nan')]:
+            with self.subTest(value=value):
+                with self.assertRaises(Problem):
+                    self.act('project_info', {'contractValue': value})
+                with self.assertRaises(Problem):
+                    self.act('milestone_cell', {'id': mid, 'field': 'paymentPercent', 'value': value})
+        self.assertEqual(self.w.state('owner')['projects'][0], before)
+
 if __name__=='__main__': unittest.main()

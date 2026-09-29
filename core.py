@@ -1,5 +1,6 @@
 """Persistent project workspace. All access decisions are enforced here."""
 import json
+import math
 import sqlite3
 import uuid
 from datetime import date, datetime, timezone
@@ -354,7 +355,7 @@ def normalize_milestone_value(field, value):
             number = float(value or 0)
         except (TypeError, ValueError):
             raise Problem('สัดส่วนเงินต้องเป็นตัวเลข')
-        if number < 0 or number > 100:
+        if not math.isfinite(number) or number < 0 or number > 100:
             raise Problem('สัดส่วนเงินต้องอยู่ระหว่าง 0–100%')
         return round(number, 4)
     if field == 'status':
@@ -400,7 +401,7 @@ def money_value(value):
         number = float(value or 0)
     except (TypeError, ValueError):
         raise Problem('มูลค่าสัญญาต้องเป็นตัวเลข')
-    if number < 0 or number > 1_000_000_000_000:
+    if not math.isfinite(number) or number < 0 or number > 1_000_000_000_000:
         raise Problem('มูลค่าสัญญาไม่ถูกต้อง')
     return round(number, 2)
 

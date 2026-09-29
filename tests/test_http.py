@@ -37,6 +37,37 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(self.request('/api/action',{'action':'create_project','name':'bad'},{**cookie,'Origin':'https://evil.invalid'})[0],403)
         self.assertEqual(self.request('/api/logout',{},cookie)[0],200)
         self.assertEqual(self.request('/api/state',headers=cookie)[0],401)
+    def test_tor_http_payment_audit_and_reload(self):
+        status,h,_=self.request('/api/login',{'user':'tester','password':'long-test-password'})
+        self.assertEqual(status,200)
+        headers={'Cookie':h['Set-Cookie'].split(';')[0]}
+        state=json.loads(self.request('/api/state',headers=headers)[2])
+        headers['X-CSRF-Token']=state['csrf']
+        def action(action_name, **data):
+            status,_,body=self.request('/api/action',{'action':action_name,**data},headers)
+            self.assertEqual(status,200,body)
+        def project():
+            state=json.loads(self.request('/api/state',headers=headers)[2])
+            return next(p for p in state['projects'] if p['name']=='HTTP TOR')
+        action('create_project',name='HTTP TOR')
+        pid=project()['id']
+        action('project_info',project=pid,contractValue='1000000')
+        action('milestone_add',project=pid)
+        mid=project()['milestones'][0]['id']
+        action('milestone_cell',project=pid,id=mid,field='paymentNo',value='1')
+        action('milestone_cell',project=pid,id=mid,field='paymentPercent',value='25')
+        action('milestone_cell',project=pid,id=mid,field='deliverables',value='Demo acceptance report')
+        saved=project()
+        self.assertEqual(saved['paymentSummary']['groups']['1']['amount'],250000)
+        self.assertEqual(saved['milestones'][0]['deliverables'],'Demo acceptance report')
+        event=saved['events'][0]
+        self.assertEqual(event['actor'],'tester')
+        self.assertEqual(json.loads(event['detail'])['after'],'Demo acceptance report')
+        status,_,_=self.request('/api/action',{'action':'milestone_cell','project':pid,'id':mid,'field':'paymentPercent','value':'NaN'},headers)
+        self.assertEqual(status,400)
+        self.assertEqual(project()['paymentSummary'],saved['paymentSummary'])
+        self.assertEqual(project()['events'],saved['events'])
+
     def test_static_allowlist(self):
         self.assertEqual(self.request('/server.py')[0],404)
         status,h,b=self.request('/')

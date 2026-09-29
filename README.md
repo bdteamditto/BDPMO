@@ -17,6 +17,8 @@ The first command securely prompts for a password (at least 12 characters). Open
 
 ```sh
 python3 -m unittest discover -s tests -v
+node --check static/app.js
+node --test tests/test_ui.cjs
 ```
 
 ## Collaboration and persistence

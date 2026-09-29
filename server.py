@@ -21,9 +21,12 @@ def hash_password(password, salt=None):
     salt = salt or secrets.token_hex(16)
     return salt + ':' + hashlib.pbkdf2_hmac('sha256',password.encode(),salt.encode(),600000).hex()
 
-def add_user(name, password):
+def add_user(name, password, *, demo=False):
     if not name or len(name)>100 or any(c.isspace() for c in name): raise ValueError('Username must be 1–100 characters without spaces')
-    if len(password)<12: raise ValueError('Password must have at least 12 characters')
+    if demo and os.environ.get('PMO_ENV') != 'preview':
+        raise ValueError('Demo provisioning requires PMO_ENV=preview')
+    if not password or (not demo and len(password)<12):
+        raise ValueError('Password must have at least 12 characters outside demo provisioning')
     w=Workspace(DB)
     with w.db: w.db.execute('INSERT INTO users VALUES (?,?)',(name,hash_password(password)))
     w.close()
@@ -33,6 +36,7 @@ class Handler(BaseHTTPRequestHandler):
         body=json.dumps(data,ensure_ascii=False).encode()
         self.send_response(status)
         self.send_header('Content-Type','application/json; charset=utf-8')
+        self.send_header('Content-Length',str(len(body)))
         self.send_header('Cache-Control','no-store')
         self.send_header('X-Content-Type-Options','nosniff')
         if cookie: self.send_header('Set-Cookie',cookie)
@@ -103,9 +107,12 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser()
+    parser.add_argument('--provision-demo', action='store_true')
     parser.add_argument('--add-user'); parser.add_argument('--port',type=int,default=8000); parser.add_argument('--host',default='127.0.0.1')
     args=parser.parse_args()
-    if args.add_user: add_user(args.add_user,getpass.getpass('Password (12+ characters): '))
+    if args.provision_demo:
+        add_user(os.environ.get('PMO_DEMO_USER', 'admin'), os.environ.pop('PMO_DEMO_PASSWORD', ''), demo=True)
+    elif args.add_user: add_user(args.add_user,getpass.getpass('Password (12+ characters): '))
     else:
         Workspace(DB).close()
         print(f'PMO workspace: http://{args.host}:{args.port}',flush=True)
