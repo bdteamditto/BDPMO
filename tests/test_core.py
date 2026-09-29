@@ -61,4 +61,39 @@ class WorkspaceTests(unittest.TestCase):
     def test_invalid_status(self):
         with self.assertRaises(Problem): self.task(status='HACK')
 
+    def test_tor_milestone_payment_summary_and_audit(self):
+        self.act('project_info',{'contractName':'Contract A','contractValue':'10000000'})
+        self.act('milestone_add',{})
+        m=self.w.state('owner')['projects'][0]['milestones'][0]
+        self.act('milestone_cell',{'id':m['id'],'field':'paymentNo','value':'1'})
+        self.act('milestone_cell',{'id':m['id'],'field':'paymentPercent','value':'20'})
+        p=self.w.state('owner')['projects'][0]
+        self.assertEqual(p['paymentSummary']['totalPercent'],20)
+        self.assertEqual(p['paymentSummary']['groups']['1']['amount'],2000000)
+        event=next(e for e in p['events'] if e['action']=='milestone_cell' and 'paymentPercent' in e['detail'])
+        self.assertIn('before',event['detail']);self.assertIn('after',event['detail'])
+
+    def test_tor_payment_total_cannot_exceed_100(self):
+        self.act('milestone_add',{});self.act('milestone_add',{})
+        rows=self.w.state('owner')['projects'][0]['milestones']
+        self.act('milestone_cell',{'id':rows[0]['id'],'field':'paymentPercent','value':'60'})
+        with self.assertRaises(Problem):
+            self.act('milestone_cell',{'id':rows[1]['id'],'field':'paymentPercent','value':'50'})
+        p=self.w.state('owner')['projects'][0]
+        self.assertEqual(p['paymentSummary']['totalPercent'],60)
+
+    def test_viewer_cannot_edit_tor_sheet(self):
+        self.act('milestone_add',{})
+        mid=self.w.state('owner')['projects'][0]['milestones'][0]['id']
+        with self.assertRaises(Problem):
+            self.act('milestone_cell',{'id':mid,'field':'deliverables','value':'x'},'viewer')
+
+    def test_editor_can_edit_tor_but_not_project_contract_info(self):
+        self.act('milestone_add',{})
+        mid=self.w.state('owner')['projects'][0]['milestones'][0]['id']
+        self.act('milestone_cell',{'id':mid,'field':'deliverables','value':'SIT Report'},'editor')
+        self.assertEqual(self.w.state('owner')['projects'][0]['milestones'][0]['deliverables'],'SIT Report')
+        with self.assertRaises(Problem):
+            self.act('project_info',{'contractName':'Changed'},'editor')
+
 if __name__=='__main__': unittest.main()
