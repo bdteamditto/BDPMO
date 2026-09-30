@@ -1,5 +1,6 @@
 import meta from './meta.json' with {type:'json'};
 export {meta};
+meta.controlModules.acceptance??={label:'ตรวจรับ',phase:'Acceptance',fields:[['title','รายการตรวจรับ','text'],['owner','ผู้รับผิดชอบ','member'],['due','กำหนดตรวจรับ','date'],['status','สถานะ','status'],['evidence','หลักฐาน / เลขที่หนังสือ','textarea'],['notes','รอใคร / ติดอะไร / หมายเหตุ','textarea'],['kind','ประเภท','select',['DELIVERY_REVIEW','CUSTOMER_REPLY','ACCEPTANCE']],['milestoneId','งวดงานที่ผูก','milestone'],['customerReplyRef','เลขที่/วันที่ตอบกลับ','text'],['customerAcceptedDate','วันที่ลูกค้าเซ็นต์รับมอบ','date']]};
 export class Problem extends Error{constructor(message,status=400){super(message);this.status=status}}
 const fail=(message,status=400)=>{throw new Problem(message,status)};
 const clone=x=>structuredClone(x),id=()=>crypto.randomUUID().replaceAll('-',''),now=()=>new Date().toISOString();
