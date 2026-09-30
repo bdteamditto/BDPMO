@@ -1,49 +1,40 @@
 # BD PMO · Project Control
 
-A new implementation based on the PMO conversation requirements. This is **not recovered PMO 3.0 source** and does not claim feature parity with the unavailable original repository.
+A Thai-language PMO workspace for tracking contract setup, procurement, plans, TOR deliveries, customer acceptance, billing, risks, documents, tasks, handover, and closure.
 
-A Thai-language workspace for distributed teams: project status and lifecycle, guided next actions, tasks and dependencies, handover notes, My Work, comments/mentions, in-app notifications, membership management and audit history.
+## Published application
 
-## Run locally
+[Open BD PMO](https://bd-pmo-workspace.bdteam1.chatgpt.site/). The app runs on Sites with a persistent D1 database; it does not depend on a laptop or temporary tunnel. Sign-in is required, and the Home page lists only projects where the signed-in account has membership. User accounts and the initial System Admin credential are provisioned outside Git; this repository contains no production passwords.
 
-Requires Python 3.11+ and no third-party packages.
+## Project workflow
+
+- Home / My Projects shows project health, membership role, phase, and Current / Next work milestones from TOR.
+- Overview is a short command center for delivery progress, the current and next milestones, items needing attention, and recent activity.
+- Project workflow pages hold the contract-opening checklist, PR/PO and vendor readiness, plan and dependencies, TOR / delivery, customer acceptance, finance, risks/issues, documents/decisions, tasks, team handover, and closure checks.
+- TOR keeps 17 stable fields, Read and Edit modes, row details, TSV paste, autosave feedback, payment allocation capped at 100%, and an audit history. Renaming a display header never changes the stored row field.
+- System Admin manages accounts, password resets, access enable/disable, and membership across projects. Project OWNER and EDITOR membership rules are enforced by the API; the final OWNER cannot be removed.
+
+## Local development
+
+The original Python server remains available for local work with SQLite. It is separate from the published hosted app.
 
 ```sh
 python3 server.py --add-user yourname
 python3 server.py
+python3 -m unittest discover -s tests -q
 ```
 
-The first command securely prompts for a password (at least 12 characters). Open http://127.0.0.1:8000, sign in and create a project. Create additional user accounts with the same CLI before adding them to projects. No default accounts or passwords are shipped.
+Run hosted API/core tests from `hosted/` and UI tests from the repository root:
 
 ```sh
-python3 -m unittest discover -s tests -v
-node --check static/app.js
+cd hosted
+node --test tests/*.test.mjs
+cd ..
 node --test tests/test_ui.cjs
 ```
 
-## Collaboration and persistence
+## Data, permissions, and boundaries
 
-Users connect to one server, which persists projects, memberships, comments, events and notifications in SQLite. Refresh the page to load other people's changes. Set `PMO_DB` to a persistent database path. Back up that database with SQLite's backup API. Sessions last eight hours and are intentionally invalidated on server restart.
+Hosted project state and account hashes are stored in D1. Passwords are stored as salted PBKDF2 hashes with a server-side pepper; sessions are revocable and mutations require CSRF and origin checks. Changes, access grants, header renames, and user-management actions are audited. Evidence fields accept text and links. Binary file upload, scheduled email/push reminders, external accounting integration, and multi-level approvals are outside this release.
 
-The included server is for local review or a small controlled pilot. For remote access, deploy behind an HTTPS reverse proxy with `PMO_SECURE_COOKIE=1`, preserve the public Host header, restrict direct backend access, and use a persistent volume. See [deployment notes](docs/DEPLOYMENT.md). No production deployment is enabled.
-
-## Access model
-
-- OWNER manages settings and membership, including other owners. The last owner cannot be removed or demoted.
-- EDITOR edits project work. When `allowEditorInvites` is enabled, an editor can add existing accounts as EDITOR or VIEWER; cannot change existing memberships or touch OWNER permissions.
-- VIEWER is read-only, including comments and handover.
-- All decisions are enforced on the server. Assignment does not grant access. Membership events record actor, before/after role and timestamp; memberships retain `addedBy` and `grantedBy`.
-
-## Included workflows
-
-Project health prioritizes Completed, Blocked, Overdue, At Risk, then On Track. The UI displays the reason. At Risk includes high-priority, waiting or due-in-three-days work. Dates use the server's calendar date. Phase changes are manual; closure requires Closure phase and all tasks done.
-
-Tasks use TODO / IN_PROGRESS / WAITING / BLOCKED / REVIEW / DONE. Waiting and blocked states require context. Dependencies must be in the same project and cannot form cycles. A task cannot finish before its dependencies. Guided phase advice is recommended, not an automated phase gate or invoicing action.
-
-Notifications are created for assignment and explicit whitespace-separated `@username` mentions. Notification access follows current membership. Email, timed due reminders, automated escalations, external invitations, document uploads, financial modules and per-phase approval gates are future work in [the roadmap](docs/ROADMAP.md).
-
-## Review limitations
-
-This first draft uses a single-process standard-library HTTP server, no SSO/password reset, no live updates and no optimistic conflict detection. Concurrent sequential saves to the same task are last-write-wins. Evidence is saved as text/links; files are not uploaded. Audit events are append-only through the application, but database administrators can modify the file. Project members can read project events. Production hardening and operational review are required before broader rollout.
-
-See [docs/UX_UPDATE.md](docs/UX_UPDATE.md) for the Home / My Projects, stable TOR header and System Admin update.
+See [hosted deployment notes](docs/HOSTED_DEPLOYMENT.md), [requirements coverage](docs/REQUIREMENTS_REVIEW.md), and [validation results](docs/VALIDATION.md).

@@ -12,7 +12,7 @@ function app() {
       createElement: () => ({ innerHTML: '', querySelector() { return { innerHTML: this.innerHTML }; } })
     }
   });
-  const source = fs.readFileSync('static/app.js', 'utf8').replace(/refresh\(\);\s*$/, '');
+  const source = fs.readFileSync('hosted/public/app.js', 'utf8').replace(/refresh\(\);\s*$/, '');
   vm.runInContext(source, context);
   vm.runInContext(`
     state={user:'demo',csrf:'test',milestoneStatuses:['NOT_DUE'],projects:[{
@@ -37,6 +37,8 @@ test('Read mode has no editable cells or row mutation controls; viewer stays rea
 
 test('A successful cell save updates payment and audit panels without replacing the sheet', async () => {
   const {context, nodes, run} = app();
+  assert.match(run('torView(pnow())'),/id='paymentSummary'/);
+  assert.match(run('torView(pnow())'),/id='torAudit'/);
   context.el = {dataset:{mid:'m',field:'paymentPercent'},value:'25',isConnected:true};
   run(`api=async(path,data)=>{
     if(path==='action'){
@@ -88,18 +90,44 @@ w.act('demo','project',{'project':p,'name':'Lifecycle review','phase':'Delivery'
 print(json.dumps(w.state('demo')))
 `],{encoding:'utf8'}));
   instance.context.fixture=fixture;
-  instance.run('state=fixture;selected=state.projects[0].id');
+  instance.run('state=fixture;selected=state.projects[0].id;state.projects[0].deliverySummary.next=state.projects[0].milestones[4]');
   return instance;
 }
 
-test('Overview renders backend delivery progress, current milestone, and unknown finance honestly',()=>{
+test('My Projects and Overview stay separate, concise, and derive Current/Next from TOR',()=>{
  const {run}=lifecycleApp();
- const html=run('homeView(pnow())');
- assert.match(html,/3 \/ 5 งวด · 60%/);
- assert.match(html,/งวดที่ 4/);
- assert.match(html,/ยังไม่มีข้อมูลรับ–จ่ายเงินจริง/);
- assert.match(html,/0 \/ 5 งวด/);
- assert.doesNotMatch(html,/undefined|NaN/);
+ const home=run('homeDashboard()');
+ assert.match(home,/Current[\s\S]*งวดงานที่ 4/);
+ assert.match(home,/Next[\s\S]*งวดงานที่ 5/);
+ assert.match(home,/ตามแผน|มีความเสี่ยง|ล่าช้า/);
+ const overview=run('homeView(pnow())');
+ assert.match(overview,/3 \/ 5 งวด · 60%/);
+ assert.match(overview,/งวดงานที่ 4/);
+ assert.match(overview,/งวดงานที่ 5/);
+ assert.match(overview,/ความเคลื่อนไหวล่าสุด/);
+ assert.doesNotMatch(overview,/ยังไม่มีข้อมูลรับ–จ่ายเงินจริง|เส้นทางส่งมอบและตรวจรับ|undefined|NaN/);
+});
+
+test('Team page renders structured handover fields and does not hide membership metadata',()=>{
+ const {run}=lifecycleApp();
+ const html=run('teamView(pnow())');
+ assert.match(html,/เพิ่มสมาชิก/);
+ assert.match(html,/เพิ่มโดย/);
+ assert.match(html,/ให้สิทธิ์โดย/);
+ assert.match(html,/สถานะปัจจุบัน/);
+ assert.match(html,/ขั้นตอนถัดไป/);
+ assert.match(html,/ลิงก์ \/ เอกสารสำคัญ/);
+});
+
+test('Admin page exposes user lifecycle controls and cross-project membership',()=>{
+ const {run}=lifecycleApp();
+ run("state.isAdmin=true;state.users=[{user:'admin',createdBy:'admin',createdAt:'2026-09-30',disabled:false}];state.adminProjects=[{id:'p',name:'Lifecycle review',members:[]}];state.adminEvents=[]");
+ const html=run('adminView()');
+ assert.match(html,/สร้างบัญชี/);
+ assert.match(html,/จัดการ \/ Reset/);
+ assert.match(html,/สร้างโดย admin/);
+ assert.match(html,/data-admin-member/);
+ assert.match(html,/System Admin Audit Log/);
 });
 
 test('Every lifecycle module and checklist form renders using real backend metadata',()=>{
@@ -118,6 +146,8 @@ test('Every lifecycle module and checklist form renders using real backend metad
  run("checklistForm('final_acceptance')");
  assert.match(run('captured.html'),/name="evidence"/);
  assert.match(run('lifecycleView(pnow())'),/ปิดโครงการ/);
+ assert.match(run('planningView(pnow())'),/Timeline งวดส่งมอบ/);
+ assert.match(run('acceptanceView(pnow())'),/CUSTOMER ACCEPTANCE/);
 });
 
 test('Date edits retain ISO format after save and detail audit is not reported as deletion',async()=>{

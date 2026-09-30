@@ -1,30 +1,24 @@
-# BD PMO scope review — 30 September 2026
+# BD PMO requirements coverage — 30 September 2026
 
-Reviewed accessible BD PMO repository files, the project roadmap, prior migration notes, and the shared requirements conversation: https://chatgpt.com/share/6abbbb8f-55c8-83ec-9f1a-d61607a48bb6 . The synced project `sources/` directory was empty. The original referenced Word document was not available; this is not a claim that its contents were checked.
+This review tracks the requirements in the BD PMO conversation and the supplied TOR example against the hosted Sites app. The original Word source was not present in the synced `sources/` folder, so this review does not claim to have checked that missing file.
 
-## Implemented in this preview
-
-| Area | Available behavior |
+| Area | Implemented behavior |
 | --- | --- |
-| Overview | Current project phase, delivered milestone count and percent, current milestone, accepted count, overdue/blocked work, actual cash records, owner and recent changes. Delivery progress does not imply payment or customer acceptance. |
-| Lifecycle | Contract → Procurement → Planning → Delivery → Acceptance → Billing → Closure. Required/recommended checklists with owner, date, evidence and notes. Advancing phase does not automatically mark earlier checks complete. |
-| Opening | Contract review, project opening, guarantee, stamp duty and kickoff records. |
-| Cost | Cost Sheet, approved budget, advance cash and forecast records. |
-| Procurement | PR, PO, vendor contract, vendor progress and accounting report records. Alerts for vendor start before PO, end buffer under 15 days, and reporting deadlines. |
-| Delivery | TOR spreadsheet with Read/Edit, typed date/number/status inputs, cell autosave, retained failed drafts, bounded TSV paste, payment allocation and per-cell audit. Row details include owner, next action, blocker, handover, evidence, comments and linked documents. |
-| Finance | Invoice, RC, customer receipts and vendor payments. Completed back-to-back payments require a completed customer receipt, correct date order and sufficient unallocated receipt amount. |
-| Risk | Severity, impact, mitigation, owner and status. High/critical active risks contribute to overview alerts. |
-| Documents | Document and decision records with references, evidence, reasons and links to project records. |
-| Closure | Final acceptance, assets, handover, lessons, warranty and guarantee release records. Closing requires completed tasks, accepted milestones, closed risks/finance and evidenced required acceptance/billing/closure checklists. |
-| Collaboration | Tasks, backup owner, handover notes, dependencies, record comments, member-only mentions, assignment notifications and My Work. Backend permissions apply to every mutation. |
+| Home / My Projects | After sign-in the app opens Home first. It lists only project memberships, summarizes health, and shows role, phase, Current and Next TOR milestones. Current/Next advance as earlier TOR milestones reach a delivered/accepted state. |
+| Overview | A concise project command center shows health, phase, delivery progress, current and next milestones, items needing attention, and recent activity. Detailed records remain on their own workflow pages. |
+| Opening / Procurement / Planning | Contract information and opening checks; PR/PO, vendor, readiness, dependency and waiting fields; plan dates, owners, milestone readiness and task dependencies. |
+| TOR / Delivery | Seventeen stable internal fields, editable display headers, Read/Edit modes, row details, row add/remove, TSV paste, autosave and visible feedback, payment summary, cell validation, retained failed drafts, comments, and per-change audit with actor and time. Header renames preserve existing row data. |
+| Acceptance / Finance | Acceptance is separate from delivery and linked to TOR milestone records. Finance tracks invoices, customer receipts and vendor payments, linked milestones, evidence and back-to-back payment controls. TOR payment allocation is capped at 100%; payment amounts derive from contract value and percent, not from cash received. |
+| Risk / Issue / Blocker | Records include type, owner, due date, status, action, resolution, waiting context, severity/impact, evidence, and audit. Open items appear in project attention summaries and block closure where applicable. |
+| Documents / Decisions | Text/link evidence, references, related records and decision rationale. Binary file upload is not included in this release. |
+| Tasks / My Work | TODO → IN_PROGRESS → WAITING → BLOCKED → REVIEW → DONE; owner, backup, due date, priority, dependencies, waiting/blocker context, next action, evidence, comments, @mentions, notifications, My Work and audit. |
+| Team / Handover | OWNER/EDITOR/VIEWER membership with `addedBy` and `grantedBy`; structured handover for status, completed work, remaining work, next step, waiting for, and important links. Legacy handover notes remain readable. |
+| Closure | Readiness covers tasks, delivery/acceptance, finance, open risks/issues, documents, lessons learned, and closure evidence. Required checks need evidence before project completion. |
+| System Admin | Separate from project OWNER. Can create users, reset passwords, disable/enable accounts, inspect creator/timestamp, and add/change/remove project memberships. Simple passwords are accepted; passwords are hashed before storage. All admin and membership changes are audited. |
+| Permissions | OWNER manages all project roles; EDITOR can add new EDITOR/VIEWER members but cannot change existing roles or set OWNER; VIEWER is read-only. The final OWNER is protected. System Admin can manage memberships across projects. |
 
-## Honest limits for the meeting
+## Release boundaries
 
-- This is a working preview, not a claim that the full roadmap is complete.
-- Documents are references/links and text; binary upload and external document storage are not implemented.
-- Notifications are in-app assignments and mentions. Scheduled reminders, email/push escalation, workload planning, live collaborative editing and accounting-system integration remain future work.
-- Daily/weekly updates can be recorded as tasks or notes; there is no dedicated reporting workflow yet.
-- Control forms capture records and rules; they do not implement multi-level approval routing or replace an accounting ledger.
-- Browser access was subsequently available. Login, overview and cell-to-audit behavior were verified during the hosted migration; see HOSTED_DEPLOYMENT.md.
-- Hosting now uses Sites and persistent D1. The old Quick Tunnel is a separate legacy demo; see HOSTED_DEPLOYMENT.md.
-- User project data, credentials and preview database remain outside Git. Unprovided acceptance, amounts, payments, owners and evidence are not fabricated.
+Full binary file upload was explicitly not required for this round; evidence fields accept text or links and the document model remains extensible. External accounting integration and multi-level approval routing were not requested. In-app notifications, comments, @mentions, dependencies, and My Work remain available. Data not provided by the user—such as contract value, actual receipts, customer acceptance, assigned owners, or evidence—is not fabricated.
+
+See [hosted deployment and live checks](HOSTED_DEPLOYMENT.md) and [validation results](VALIDATION.md).

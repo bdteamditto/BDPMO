@@ -1,43 +1,25 @@
 # Current hosted application
 
-The application has moved to [Sites with persistent D1](HOSTED_DEPLOYMENT.md). The local tunnel instructions below apply only to the legacy demo.
+The live application is [BD PMO](https://bd-pmo-workspace.bdteam1.chatgpt.site/), hosted on Sites with a persistent D1 database. It continues to work when the original laptop or a temporary Cloudflare tunnel is offline. Sign-in and project membership are required to see project records.
 
-# Preview and deployment
+The deployable source is in [`hosted/`](../hosted/); the original Python/SQLite server remains available for local development only. Do not treat its local accounts or database as production data.
 
-The current review can run as a temporary HTTPS preview through Cloudflare Quick Tunnel. This is not an always-on hosted deployment: the URL stops working when the local server, tunnel, network connection, or computer stops. No production cutover is enabled.
-
-## Local preview
-
-Run `python3 server.py --add-user yourname`, then `python3 server.py`. This binds only to localhost. The repository contains no seeded identities, passwords, production records or credentials.
-
-## Proposed hosted pilot
-
-1. Use a Python 3.11+ service with a persistent volume, one application process and a dedicated preview database.
-2. Set `PMO_DB` to that volume and `PMO_SECURE_COOKIE=1`.
-3. Start `python3 server.py --host 0.0.0.0 --port 8000` behind HTTPS; allow inbound backend connections only from the proxy. Preserve the public Host header for origin checks.
-4. Create pilot accounts via the CLI using unique passwords. Do not put passwords in GitHub, command arguments or logs.
-5. Verify login/logout, member isolation, VIEWER denial, editor invite rules, last-owner protection, persistence across restarts and database backups.
-6. Use a separate domain and synthetic data for preview. Do not repoint the existing production URL.
-7. Obtain explicit approval before production cutover. Decide on SSO, account lifecycle, monitoring, login rate limiting behind proxy, backup/restore, conflict handling, scale, TLS and production HTTP hosting before that cutover.
-
-The API provides session cookies, CSRF token checks, origin checks, login throttling, password hashing and a static-file allowlist. These are implementation controls, not a claim of a completed security review.
-
-## Preview-only demo provisioning
-
-Keep a dedicated synthetic preview database outside the checkout. Set `PMO_ENV=preview`, `PMO_DB` to that database, `PMO_DEMO_USER` to the demo username, and inject `PMO_DEMO_PASSWORD` from a secret manager or interactive shell environment. Then run:
+## Local development
 
 ```sh
-python3 server.py --provision-demo
-unset PMO_DEMO_PASSWORD
-PMO_SECURE_COOKIE=1 python3 server.py --host 127.0.0.1 --port 8765
+python3 server.py --add-user yourname
+python3 server.py
 ```
 
-In a separate terminal, run the official Cloudflare client:
+The local Python server uses SQLite and its own account rules. It is not a fallback for the live Site.
 
-```sh
-cloudflared tunnel --url http://127.0.0.1:8765 --no-autoupdate --protocol http2
-```
+## Hosted operations
 
-Use the returned HTTPS URL. Leave both processes running. No password is supplied in these examples or stored in Git. Provisioning stores only a salted PBKDF2 hash and refuses duplicate accounts. Short nonempty passwords are accepted only by the explicit demo provisioning command when `PMO_ENV=preview`; ordinary `--add-user` always keeps the 12-character minimum. Do not reuse a preview database in production.
+- Site identity and D1 binding are recorded in `hosted/.openai/hosting.json`.
+- Runtime credentials and provisioning secrets are configured through Sites and never stored in repository files.
+- User passwords are salted PBKDF2 hashes with a server-side pepper. Admin create/reset/enable/disable operations are audited.
+- Initial data import is single-use and refuses to overwrite an initialized workspace.
+- D1 writes use revision checks so concurrent edits fail visibly instead of silently replacing saved data.
+- Publish only saved, successfully built Site versions; keep the Site's current audience and the production URL.
 
-For an always-on deployment, a Python hosting account with persistent disk and HTTPS is still required. The temporary tunnel is a review aid, not a substitute for that hosting.
+See [hosted deployment record](HOSTED_DEPLOYMENT.md) and [validation](VALIDATION.md).

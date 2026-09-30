@@ -1,19 +1,13 @@
 # Validation — 30 September 2026
 
-Branch: `feat/tor-delivery-spreadsheet`, draft PR #2. No merge or production cutover.
+Branch `feat/tor-delivery-spreadsheet`; PR #2 remains open as a draft and is not merged.
 
-- **33 Python tests passed**: permissions, task lifecycle/dependencies, TOR edits, atomic bulk paste, payment allocation and rollback, audit, lifecycle modules, evidence rules, closure/reopening, back-to-back receipt allocation, record comments, cross-project reference rejection, Thai dates, delivery summaries, HTTP login/CSRF/logout and HTTP persistence across all new modules.
-- **8 JavaScript tests passed**: Read/Edit and VIEWER controls; derived payment/audit updates; failed-draft retention; newer typing preservation; overview 3/5 progress independent of finance/acceptance; every module/form rendered against real backend metadata; date-input normalization and detail audit labels; visible dialog validation failures with retry.
-- JavaScript syntax and Git whitespace checks passed.
-- Frontend tests use a minimal document stub and backend-generated fixtures, not a browser. HTTP tests use a separate temporary database and server.
-- Actual preview database backed up before update. Its five milestones now have three DELIVERED, one IN_PROGRESS and one NOT_DUE, per user confirmation. Derived progress is 60%; accepted count is zero until evidence is supplied; allocated payment percentages total 100%, without implying cash received.
-- The old temporary tunnel expired. A replacement tunnel registered and the preview service was restarted. Saved browser access restrictions prevent claiming live-browser end-to-end verification.
-- Only salted password hashes are stored in the external preview database. No plaintext demo credential or user records are committed.
+- **33 Python tests passed** for the local app's permission, task, TOR, payment, audit, lifecycle, HTTP, and persistence behavior.
+- **26 hosted core/API tests passed** for D1-compatible persistence, authentication, CSRF/origin, membership visibility, Current/Next derivation, role rules, stable header rename, row-data preservation, audit, simple-password user create/reset/disable, payment bounds, task dependencies, and closure gates.
+- **10 JavaScript UI tests passed** for Read/Edit permissions, payment/audit refresh, failed-draft retention, separate Home and Overview, Current/Next display, concise Overview, Team handover, System Admin, module forms, and visible validation errors.
+- JavaScript syntax, hosted build, and Git whitespace checks passed.
+- Live production checks passed on Sites version 10: login; Home membership filter and Current/Next; Overview at 3/5 deliveries and Current 4 / Next 5; TOR Read/Edit; header rename with row values preserved; cell edit; TSV paste; payment summary at 100%; audit history; Team membership and structured handover; and System Admin account form. Temporary test cell values and the test header were restored; the audit intentionally retains those test and restore events.
+- Corrected production payment allocation to match the supplied example: work 2 / payment 1 / 20%, work 4 / payment 2 / 40%, work 5 / payment 3 / 40%. Contract value remains blank because the user did not provide an amount.
+- Sites deployment succeeded at `https://bd-pmo-workspace.bdteam1.chatgpt.site/`; source commit `390fa5ba710f52434ce400c8634d1fa0ac52b94c`; saved version 10; deployment `appgdep_6abcf984ebf4819191161b4413aca791`.
 
-Commands: `python3 -m unittest discover -s tests -q`, `node --test tests/test_ui.cjs`, `node --check static/app.js`, `git diff --check`.
-
-See [requirements coverage and remaining work](REQUIREMENTS_REVIEW.md) and [deployment limitations](DEPLOYMENT.md).
-
-## Hosted follow-up
-
-See [HOSTED_DEPLOYMENT.md](HOSTED_DEPLOYMENT.md) for the persistent Sites deployment, 17 hosted backend/API tests, data parity checks and live browser verification. The earlier browser access restriction was resolved in the subsequent user-authorized test.
+Commands: `python3 -m unittest discover -s tests -q`; from `hosted/`, `node --test tests/*.test.mjs`; from the repository root, `node --test tests/test_ui.cjs`; `node --check hosted/public/app.js`, `hosted/lib/pmo/core.mjs`, and `hosted/lib/pmo/api.mjs`; and `git diff --check`.

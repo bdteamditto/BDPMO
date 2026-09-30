@@ -1,29 +1,28 @@
 # Hosted BD PMO — 30 September 2026
 
-Application: https://bd-pmo-workspace.bdteam1.chatgpt.site
+Application: [https://bd-pmo-workspace.bdteam1.chatgpt.site/](https://bd-pmo-workspace.bdteam1.chatgpt.site/)
 
-The application now runs on Sites/Cloudflare Workers with a persistent D1 database. It does not depend on the demo laptop or its Cloudflare Quick Tunnel.
-
-`hosted/` contains the full deployable hosted source, including lockfile, build integration, schema-only Drizzle migration, backend port, UI and tests. The separate Sites source repository was published at commit `ddb2afca521cc6770c907d2442c701b8e7cc0dc1` (environment revision 2).
+The application runs on Sites/Cloudflare Workers with a persistent D1 database. It does not depend on a laptop or temporary tunnel. The login credential is provisioned outside GitHub; no plaintext password is stored in the repository.
 
 ## Data and access
 
-- Migrated one project and all 108 existing audit entries, preserving the latest user edits, memberships, comments, workflow data and financial allocations.
-- Compared imported records and derived summaries with the original Python implementation before import.
-- The URL exposes the login screen. Project data and writes require an authenticated application account and project membership.
-- Production uses a new strong credential provisioned separately. The original demo credential is not accepted. Passwords and migration data are outside Git.
-- Initial import is single-use and refuses overwrite. Its provisioning secret was removed after import.
-- OWNER may create a separate account and assign a project role from สมาชิกและสิทธิ์. Existing role enforcement remains server-side.
-- D1 persists projects, revision, account password hashes, hashed sessions and login limits. Concurrent conflicting mutations return a recoverable 409 instead of replacing another committed update.
-- A backup of the original SQLite database was kept locally before migration. Do not continue editing the old demo database after cutover.
+- The migrated project, milestones, memberships, comments, workflow records and audit history persist in D1.
+- Project data appears only for accounts with project membership. Project OWNER, EDITOR and VIEWER rules are checked by the API.
+- System Admin account management is separate from project OWNER. It can create/reset users with simple passwords, enable/disable accounts, and manage project membership across all projects. Passwords are hashed before storage.
+- Header, TOR cell, project, user, membership and workflow mutations write audit events. Concurrent D1 changes are guarded by revisions.
+- Evidence is recorded as text or links; binary uploads and external integrations are not part of this release.
 
 ## Validation
 
-- 17 hosted backend/API tests passed against SQLite-backed D1-compatible statements: storage, authentication, CSRF/origin, account provisioning, permissions, money rules, closure gates and concurrent updates.
-- Original frontend tests also cover duplicate-free change/blur autosave and visible form errors.
-- Local Worker runtime login and cell autosave were verified in a browser, including audit entries and restored test values.
-- Sites deployment reached `succeeded` with the URL above. Final browser checks and cutover details are recorded in the PR.
+Latest published release:
 
-## Remaining product work
+- Sites source commit: `390fa5ba710f52434ce400c8634d1fa0ac52b94c`
+- Saved version: 10 (`appgprj_6abbf56a11a08191a8e38c8059988f25~appgver_7322d822bc5c8191bd363d8e6cfed97a`)
+- Production deployment: `appgdep_6abcf984ebf4819191161b4413aca791` — succeeded
+- URL: [https://bd-pmo-workspace.bdteam1.chatgpt.site/](https://bd-pmo-workspace.bdteam1.chatgpt.site/)
 
-File uploads, scheduled email escalation, accounting integrations and multi-level approval routing are not included. The deployment is persistent hosting for the implemented workspace; it is not a claim that every future roadmap item exists.
+The live browser path passed: login → Home / My Projects → project Overview → TOR Read Mode → Edit Mode → header rename → cell edit → TSV paste → payment summary → audit history → Team / Membership → System Admin. The Home card and Overview both showed three completed delivery milestones (60%), Current milestone 4, and Next milestone 5. The TOR payment summary matched the supplied 20% / 40% / 40% allocation and totaled 100%. Header and paste tests were restored after validation; their audit entries remain as an accurate history. The Admin page showed account creation, password reset/disable controls, and cross-project role management; the create-user form was inspected and closed without adding a test account.
+
+Project-startup and closure pages were also checked. The closure view correctly flags outstanding acceptance, finance, document, risk, and closeout evidence as incomplete. Contract value remains unspecified because no amount was supplied.
+
+See [requirements coverage](REQUIREMENTS_REVIEW.md) and [validation](VALIDATION.md) for the full checklist and tests.
