@@ -2,7 +2,7 @@
 from datetime import date, timedelta
 import calendar
 
-PHASE_LABELS = {'Contract':'เริ่มงาน / สัญญา','Procurement':'จัดซื้อ / Vendor','Planning':'วางแผนโครงการ','Delivery':'ดำเนินงาน / ส่งมอบ','Acceptance':'ตรวจรับ','Billing':'วางบิล / รับ–จ่ายเงิน','Closure':'ปิดโครงการ'}
+PHASE_LABELS = {'Contract':'เริ่มงาน / สัญญา','Procurement':'สัญญา Vendor / จัดซื้อ','Planning':'วางแผนโครงการ','Delivery':'ดำเนินงาน / ส่งมอบ','Acceptance':'ตรวจรับ','Billing':'วางบิล / รับ–จ่ายเงิน','Closure':'ปิดโครงการ'}
 CHECKS = {
  'Contract':[('contract_review','ตรวจ TOR และสัญญาลูกค้า',True),('project_open','เปิดเลขโครงการและแต่งตั้งผู้รับผิดชอบ',True),('guarantee','ตรวจ Bank Guarantee และอากรแสตมป์',True)],
  'Procurement':[('cost_approval','อนุมัติ Cost Sheet / งบประมาณ',True),('purchase','ตรวจ PR / PO และสัญญา Vendor หรือบันทึกว่าไม่เกี่ยวข้อง',True)],
@@ -20,7 +20,7 @@ MODULES = {
  'cost':{'label':'ต้นทุน / งบประมาณ','phase':'Procurement','fields':[
  ['kind','ประเภท','select',['COST_SHEET','APPROVED_BUDGET','ADVANCE_CASH','FORECAST']],['amount','จำนวนเงิน','money'],['approvalRef','เลขอนุมัติ / ผู้อนุมัติ','text']]},
  'procurement':{'label':'จัดซื้อ / Vendor','phase':'Procurement','fields':[
- ['kind','ประเภท','select',['PR','PO','VENDOR_CONTRACT','VENDOR_PROGRESS','ACCOUNTING_REPORT']],['vendor','Vendor','text'],['reference','เลข PR / PO / สัญญา','text'],['poDate','วันที่ PO','date'],['startDate','เริ่มสัญญา Vendor','date'],['endDate','สิ้นสุดสัญญา Vendor','date'],['period','รอบรายงาน','month'],['completedDate','วันที่ได้รับ / ส่งรายงานแล้ว','date'],['amount','จำนวนเงิน','money']]},
+ ['kind','ประเภท','select',['PR','PO','VENDOR_CONTRACT','VENDOR_PROGRESS','ACCOUNTING_REPORT']],['vendor','Vendor','text'],['reference','เลข PR / PO / สัญญา','text'],['lsfNo','เลขของาน LSF','text'],['poDate','วันที่ PO','date'],['startDate','เริ่มสัญญา Vendor','date'],['endDate','สิ้นสุดสัญญา Vendor','date'],['period','รอบรายงาน','month'],['completedDate','วันที่ได้รับ / ส่งรายงานแล้ว','date'],['amount','จำนวนเงิน','money']]},
  'finance':{'label':'การเงิน / รับ–จ่าย','phase':'Billing','fields':[
  ['kind','ประเภท','select',['INVOICE','RC','CUSTOMER_PAYMENT','VENDOR_PAYMENT']],['reference','เลข Invoice / RC / ใบสำคัญ','text'],['amount','จำนวนเงิน','money'],['completedDate','วันที่รับ / จ่ายแล้ว','date'],['condition','เงื่อนไข','select',['STANDARD','BACK_TO_BACK']],['customerPaymentId','รายการรับเงินลูกค้าที่รองรับ (Back-to-back)','customerPayment'],['milestoneId','งวดงานที่เกี่ยวข้อง','milestone']]},
  'risk':{'label':'ความเสี่ยง','phase':'Planning','fields':[

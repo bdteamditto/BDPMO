@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {Workspace,meta,Problem,parseDay,deliverySummary,controlSummary} from '../lib/pmo/core.mjs';
+import {Workspace,meta,Problem,parseDay,deliverySummary,controlSummary,health} from '../lib/pmo/core.mjs';
 function setup(){const w=new Workspace({users:['owner','editor','viewer','outsider'],projects:[],members:[],events:[],notifications:[]});w.act('owner','create_project',{name:'Test'});const p=w.data.projects[0];for(const [user,role] of [['editor','EDITOR'],['viewer','VIEWER']])w.act('owner','member',{project:p.id,user,role});const act=(action,d={},user='owner')=>w.act(user,action,{project:p.id,...d}),project=()=>w.state('owner').projects[0];const record=(module,d={})=>{const fields=Object.fromEntries(meta.controlModules[module].fields.map(([k,l,t,choices])=>[k,t==='select'?choices[0]:t==='status'?'TODO':'']));act('control',{...fields,title:'Record',owner:'editor',module,...d});return project().controls[module].at(-1)};return {w,p,act,project,record}}
 test('Every lifecycle module persists with audit and assignments',()=>{const {w,record,project}=setup();for(const module of Object.keys(meta.controlModules)){record(module);assert.equal(project().events[0].action,'control')}assert.equal(w.state('editor').notifications.length,Object.keys(meta.controlModules).length)});
 test('Viewer and outsider cannot mutate data',()=>{const {act}=setup();for(const user of ['viewer','outsider'])for(const [action,d] of [['milestone_add',{}],['control',{module:'risk'}],['checklist',{id:'project_open',status:'DONE',evidence:'proof'}]])assert.throws(()=>act(action,d,user),e=>e.status===403)});
@@ -38,3 +38,35 @@ test('EDITOR can add only new EDITOR/VIEWER members; OWNER manages roles; VIEWER
 test('EDITOR can rename headers and edit a cell without changing stable row data; audit records actor and time',()=>{const {w,act,project}=setup();act('milestone_add');const row=project().milestones[0];act('milestone_cell',{id:row.id,field:'deliverables',value:'Original delivery text'},'editor');act('milestone_headers',{labels:[{field:'deliverables',label:'Planned Delivery'}]},'editor');const p=project(),event=w.data.events.at(-1);assert.equal(p.milestoneLabels.deliverables,'Planned Delivery');assert.equal(p.milestones[0].id,row.id);assert.equal(p.milestones[0].deliverables,'Original delivery text');assert.throws(()=>act('milestone_headers',{labels:[{field:'deliverables',label:'Viewer edit'}]},'viewer'),e=>e.status===403);assert.throws(()=>act('milestone_cell',{id:row.id,field:'deliverables',value:'Viewer overwrite'},'viewer'),e=>e.status===403);assert.equal(event.actor,'editor');assert.ok(event.at);assert.deepEqual(JSON.parse(event.detail),{field:'deliverables',before:'สิ่งส่งมอบ',after:'Planned Delivery'})});
 test('Structured handover preserves legacy notes and records a complete audit event',()=>{const {w,act,project}=setup();w.data.projects[0].handover='Old handover notes';act('handover',{details:{status:'กำลังดำเนินงาน',done:'ส่งมอบแล้ว 3 งวด',remaining:'ทดสอบ SIT',next:'ทดสอบร่วมกับลูกค้า',waiting:'รอ UAT account',links:'https://docs.example/plan'}});const p=project();assert.equal(p.handover,'Old handover notes');assert.equal(p.handoverDetails.done,'ส่งมอบแล้ว 3 งวด');assert.equal(p.handoverDetails.next,'ทดสอบร่วมกับลูกค้า');assert.equal(w.data.events.at(-1).action,'handover');assert.equal(JSON.parse(w.data.events.at(-1).detail).after.links,'https://docs.example/plan')});
 test('System Admin membership changes retain membership history and audit each project-wide action',()=>{const {w}=setup();w.data.users.push('admin');w.act('owner','create_project',{name:'Admin managed'});const p=w.data.projects[1];w.act('admin','admin_membership',{project:p.id,user:'outsider',role:'VIEWER'});const added=w.data.members.find(m=>m.project===p.id&&m.user==='outsider');assert.equal(added.addedBy,'admin');assert.equal(added.grantedBy,'admin');w.act('admin','admin_membership',{project:p.id,user:'outsider',role:'EDITOR'});const changed=w.data.members.find(m=>m.project===p.id&&m.user==='outsider');assert.equal(changed.addedBy,'admin');assert.equal(changed.grantedBy,'admin');assert.equal(w.data.events.filter(e=>e.action==='admin_membership').length,4);assert.throws(()=>w.act('admin','admin_membership',{project:p.id,user:'owner',role:'REMOVE'}),e=>e.message.includes('OWNER'))});
+
+test('Multiple vendor contracts and customer LSF persist independently with audited edits',()=>{
+ const {w,act,project,record}=setup();
+ act('project_info',{contractNo:'CUSTOMER-01',lsfNo:'LSF-CUSTOMER'});
+ const first=record('procurement',{kind:'VENDOR_CONTRACT',vendor:'Vendor A',reference:'VA-01',lsfNo:'LSF-A',title:'Contract A'});
+ const second=record('procurement',{kind:'VENDOR_CONTRACT',vendor:'Vendor B',reference:'VB-01',lsfNo:'LSF-B',title:'Contract B'});
+ act('control',{...first,module:'procurement',lsfNo:'LSF-A-UPDATED'});
+ const reloaded=new Workspace(JSON.parse(JSON.stringify(w.data))).state('owner').projects[0];
+ assert.equal(reloaded.projectInfo.contractNo,'CUSTOMER-01');
+ assert.equal(reloaded.projectInfo.lsfNo,'LSF-CUSTOMER');
+ assert.equal(reloaded.controls.procurement.length,2);
+ assert.equal(reloaded.controls.procurement.find(r=>r.id===first.id).lsfNo,'LSF-A-UPDATED');
+ assert.equal(reloaded.controls.procurement.find(r=>r.id===second.id).lsfNo,'LSF-B');
+ const audit=JSON.parse(reloaded.events[0].detail);
+ assert.equal(audit.before.lsfNo,'LSF-A');assert.equal(audit.after.lsfNo,'LSF-A-UPDATED');
+});
+
+
+test('Health links resolve to the exact blocker, reminder or TOR page',()=>{
+ const {p,act,record}=setup();
+ assert.deepEqual(health(p).target,{view:'tor'});
+ act('task',{title:'Blocked task',owner:'owner',status:'BLOCKED',waiting:'Approval'});
+ let target=health(p).target;assert.equal(target.type,'task');assert.equal(target.id,p.tasks[0].id);
+ p.tasks=[];act('milestone_add');act('milestone_details',{id:p.milestones[0].id,status:'BLOCKED',waiting:'Customer'});
+ assert.deepEqual(health(p).target,{view:'tor',type:'milestone',id:p.milestones[0].id});
+ p.milestones=[];const r=record('procurement',{kind:'VENDOR_CONTRACT',status:'BLOCKED',notes:'Waiting vendor'});
+ assert.deepEqual(health(p).target,{view:'procurement',type:'control',id:r.id});
+ p.controls.procurement=[];p.projectInfo.signedDate='2000-01-01';
+ assert.deepEqual(health(p).target,{view:'opening',type:'control',kind:'STAMP_DUTY'});
+ record('opening',{kind:'STAMP_DUTY',status:'DONE',evidence:'Receipt'});
+ assert.deepEqual(health(p).target,{view:'lifecycle',type:'checklist',phase:'Planning',id:'risk_assessment'});
+});

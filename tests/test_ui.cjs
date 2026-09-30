@@ -89,10 +89,69 @@ for status in ['DELIVERED','DELIVERED','DELIVERED','IN_PROGRESS','NOT_DUE']:
 w.act('demo','project',{'project':p,'name':'Lifecycle review','phase':'Delivery'})
 print(json.dumps(w.state('demo')))
 `],{encoding:'utf8'}));
+  fixture.controlModules=JSON.parse(fs.readFileSync('hosted/lib/pmo/meta.json','utf8')).controlModules;
   instance.context.fixture=fixture;
   instance.run('state=fixture;selected=state.projects[0].id;state.projects[0].deliverySummary.next=state.projects[0].milestones[4]');
   return instance;
 }
+
+test('Stage cards select only their checklist without changing the actual project phase',()=>{
+ const {run}=lifecycleApp();
+ run("render=()=>{};view='lifecycle';pnow().lifecycleChecks.Contract[0].status='DONE'");
+ let html=run('lifecycleView(pnow())');
+ assert.equal((html.match(/class="stage-box/g)||[]).length,7);
+ assert.match(html,/data-phase="Delivery" aria-pressed="true"/);
+ assert.doesNotMatch(html,/data-check="contract_review"/);
+ run("selectLifecyclePhase('Contract')");
+ html=run('lifecycleView(pnow())');
+ assert.match(html,/data-phase="Contract" aria-pressed="true"/);
+ assert.match(html,/data-check="contract_review"/);
+ assert.match(html,/เสร็จ 1 \/ 3 ข้อ/);
+ assert.equal(run('pnow().phase'),'Delivery');
+});
+
+test('Checklist details stay read only for viewers and closed projects',()=>{
+ const {run}=lifecycleApp();
+ run('modal=(title,html,save)=>{captured={html,save}}');
+ for(const mode of ["pnow().role='VIEWER'","pnow().role='OWNER';pnow().completed=true"]){
+  run(mode);run("checklistForm('contract_review')");
+  assert.match(run('captured.html'),/fieldset disabled/);
+  assert.equal(run('captured.save'),null);
+ }
+});
+
+test('Checklist save preserves selected stage and keeps failed drafts uncommitted',async()=>{
+ const {run}=lifecycleApp();
+ run("render=()=>{};view='lifecycle';lifecycleSelection.set(selected,'Contract');api=async(path)=>{if(path==='action')return {};return state}");
+ await run("saveInPlace('checklist',{id:'contract_review',status:'TODO'})");
+ assert.equal(run('view'),'lifecycle');
+ assert.equal(run('selectedLifecyclePhase(pnow())'),'Contract');
+ run("api=async()=>{throw Error('Evidence required')}");
+ await assert.rejects(run("saveInPlace('checklist',{id:'contract_review',status:'DONE'})"),/Evidence required/);
+ assert.notEqual(run('pnow().lifecycleChecks.Contract[0].status'),'DONE');
+});
+
+test('Vendor contracts show multiple separate identifiers after the customer contract and retain extra fields',async()=>{
+ const {run}=lifecycleApp();
+ run("pnow().projectInfo.lsfNo='LSF-CUSTOMER';pnow().controls.procurement=[{id:'v1',kind:'VENDOR_CONTRACT',vendor:'Vendor A',title:'First',reference:'V-001',lsfNo:'LSF-01',status:'TODO',readiness:'WAITING',dependency:'Keep dependency',waitingFor:'Approval',comments:[]},{id:'v2',kind:'VENDOR_CONTRACT',vendor:'Vendor B',title:'Second',reference:'V-002',lsfNo:'LSF-02',status:'TODO',comments:[]}];modal=(title,html,save)=>{captured={html,save}};");
+ const opening=run("controlView(pnow(),'opening')");
+ assert.match(opening,/LSF-CUSTOMER/);
+ assert.match(opening,/2 สัญญา/);
+ assert.ok(opening.indexOf('สัญญาลูกค้า')<opening.indexOf('VENDOR CONTRACTS'));
+ assert.match(opening,/V-001[\s\S]*LSF-01[\s\S]*V-002[\s\S]*LSF-02/);
+ run("vendorContractForm('v1')");
+ assert.match(run('captured.html'),/name="lsfNo"[^>]*value="LSF-01"/);
+ assert.match(run('captured.html'),/Keep dependency/);
+ assert.match(run('captured.html'),/vendorComment/);
+ run("saveInPlace=async(action,data)=>{saved=data}");
+ await run("captured.save({lsfNo:'LSF-EDIT'})");
+ assert.equal(run('saved.reference'),'V-001');
+ assert.equal(run('saved.dependency'),'Keep dependency');
+ assert.equal(run('saved.lsfNo'),'LSF-EDIT');
+ run("pnow().role='VIEWER';vendorContractForm('v1')");
+ assert.equal(run('captured.save'),null);
+ assert.doesNotMatch(run('vendorContractSection(pnow())'),/data-add-vendor/);
+});
 
 test('My Projects and Overview stay separate, concise, and derive Current/Next from TOR',()=>{
  const {run}=lifecycleApp();
@@ -169,4 +228,16 @@ test('Validation failures stay visible inside the open dialog and allow retry',a
  assert.equal(nodes['#dialog'].open,true);
  assert.equal(nodes['#modalError'].textContent,'Evidence required');
  assert.equal(nodes['#save'].disabled,false);
+});
+
+
+test('Project health badge opens its exact problem and on-track goes to TOR',async()=>{
+ const {run}=lifecycleApp();
+ run("render=()=>{};api=async()=>state;controlForm=(module,id,preset)=>{opened={module,id,preset}};pnow().health={status:'AT RISK',reason:'Stamp',target:{view:'opening',type:'control',kind:'STAMP_DUTY'}}");
+ assert.match(run('healthLink(pnow())'),/button[^>]*data-health-project/);
+ await run('openHealthTarget(selected)');
+ assert.equal(run('view'),'opening');assert.equal(run('opened.preset.kind'),'STAMP_DUTY');
+ run("pnow().health={status:'ON TRACK',target:{view:'tor'}}");
+ await run('openHealthTarget(selected)');assert.equal(run('view'),'tor');
+ assert.match(run('homeDashboard()'),/ตามแผน<\/span><strong>1<\/strong>/);
 });

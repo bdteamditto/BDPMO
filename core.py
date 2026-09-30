@@ -14,7 +14,7 @@ MILESTONE_STATUSES = [
     'WAITING_REPLY', 'WAITING_ACCEPTANCE', 'ACCEPTED', 'LATE', 'BLOCKED'
 ]
 PROJECT_INFO_FIELDS = {
-    'contractName', 'contractNo', 'signedDate', 'projectStartDate',
+    'contractName', 'contractNo', 'lsfNo', 'signedDate', 'projectStartDate',
     'deliveryDueDate', 'projectCode', 'contractValue'
 }
 MILESTONE_FIELDS = [
