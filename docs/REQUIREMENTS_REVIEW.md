@@ -25,6 +25,6 @@ Reviewed accessible BD PMO repository files, the project roadmap, prior migratio
 - Notifications are in-app assignments and mentions. Scheduled reminders, email/push escalation, workload planning, live collaborative editing and accounting-system integration remain future work.
 - Daily/weekly updates can be recorded as tasks or notes; there is no dedicated reporting workflow yet.
 - Control forms capture records and rules; they do not implement multi-level approval routing or replace an accounting ledger.
-- Browser access to the deployed app was blocked by saved browser permissions. Isolated HTTP tests and frontend template tests passed, but visual and interactive live-browser verification remains outstanding.
-- Hosting is a temporary local server plus Cloudflare Quick Tunnel. An always-on service and persistent hosting account are still needed.
+- Browser access was subsequently available. Login, overview and cell-to-audit behavior were verified during the hosted migration; see HOSTED_DEPLOYMENT.md.
+- Hosting now uses Sites and persistent D1. The old Quick Tunnel is a separate legacy demo; see HOSTED_DEPLOYMENT.md.
 - User project data, credentials and preview database remain outside Git. Unprovided acceptance, amounts, payments, owners and evidence are not fabricated.

@@ -1,3 +1,7 @@
+# Current hosted application
+
+The application has moved to [Sites with persistent D1](HOSTED_DEPLOYMENT.md). The local tunnel instructions below apply only to the legacy demo.
+
 # Preview and deployment
 
 The current review can run as a temporary HTTPS preview through Cloudflare Quick Tunnel. This is not an always-on hosted deployment: the URL stops working when the local server, tunnel, network connection, or computer stops. No production cutover is enabled.

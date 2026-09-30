@@ -33,6 +33,7 @@ const torCols=['workNo','paymentNo','paymentPercent','contractMilestone','delive
 function torRow(m,p){return `<tr>${torCols.map(f=>`<td>${torEdit&&p.role!=='VIEWER'&&!p.completed?torInput(m,f):torRead(m,f)}</td>`).join('')}<td><button data-detail-milestone='${m.id}'>รายละเอียด</button>${torEdit&&p.role!=='VIEWER'&&!p.completed?`<button data-delete-milestone='${m.id}'>ลบ</button>`:''}</td></tr>`}
 function torRead(m,f){if(f==='status')return `<span class='badge'>${esc(milestoneStatusName[m[f]]||m[f]||'—')}</span>`;if(f==='paymentPercent')return m[f]?`${num(m[f])}%`:'—';return `<div class='cell-text'>${esc(m[f]||'—')}</div>`}
 const cellDrafts=new Map();
+const pendingCells=new Set();
 function draftKey(project,id,field){return `${project}/${id}/${field}`}
 function isoDate(value){const text=String(value||'');const parts=text.split('/');if(parts.length!==3)return text;let [d,m,y]=parts.map(Number);if(y>2400)y-=543;return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`}
 function torInput(m,f){const key=draftKey(selected,m.id,f),value=cellDrafts.has(key)?cellDrafts.get(key):m[f]??'';const attrs=`class='cell-input' aria-label='งวด ${esc(m.workNo)} ${esc(f)}' data-mid='${m.id}' data-field='${f}'`;
@@ -51,12 +52,12 @@ function commitTorCell(el){
  const row=pnow()?.milestones.find(m=>m.id===el.dataset.mid),field=el.dataset.field;
  const persisted=el.type==='date'?isoDate(row?.[field]):String(row?.[field]??'');
  const key=draftKey(selected,el.dataset.mid,field);
- if(el.value!==persisted&&cellDrafts.get(key)!==el.value)return saveTorCell(el);
+ if(el.value!==persisted&&cellDrafts.get(key)!==el.value&&!pendingCells.has(key))return saveTorCell(el);
  return cellSaves;
 }
 function saveTorCell(el){
     const project=selected, id=el.dataset.mid, field=el.dataset.field, value=el.value;
-    const key=draftKey(project,id,field);cellDrafts.set(key,value);tell('กำลังบันทึก…');
+    const key=draftKey(project,id,field);if(pendingCells.has(key))return cellSaves;pendingCells.add(key);cellDrafts.set(key,value);tell('กำลังบันทึก…');
     cellSaves=cellSaves.then(async()=>{
         try{
             await api('action',{action:'milestone_cell',project,id,field,value});
@@ -76,7 +77,7 @@ function saveTorCell(el){
             tell('บันทึกแล้ว');
         }catch(e){
             tell(e.message+' · เก็บค่าที่พิมพ์ไว้แล้ว กรุณาแก้ไขแล้วบันทึกอีกครั้ง');
-        }
+        }finally{pendingCells.delete(key)}
     });
     return cellSaves;
 }
