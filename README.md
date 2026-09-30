@@ -45,3 +45,5 @@ Notifications are created for assignment and explicit whitespace-separated `@use
 ## Review limitations
 
 This first draft uses a single-process standard-library HTTP server, no SSO/password reset, no live updates and no optimistic conflict detection. Concurrent sequential saves to the same task are last-write-wins. Evidence is saved as text/links; files are not uploaded. Audit events are append-only through the application, but database administrators can modify the file. Project members can read project events. Production hardening and operational review are required before broader rollout.
+
+See [docs/UX_UPDATE.md](docs/UX_UPDATE.md) for the Home / My Projects, stable TOR header and System Admin update.
