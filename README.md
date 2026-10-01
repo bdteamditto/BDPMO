@@ -10,7 +10,7 @@ A Thai-language PMO workspace for tracking contract setup, procurement, plans, T
 
 - Home / My Projects shows project health, membership role, phase, and Current / Next work milestones from TOR.
 - Overview is a short command center for delivery progress, the current and next milestones, items needing attention, and recent activity.
-- Project workflow pages hold the contract-opening checklist, PR/PO and vendor readiness, plan and dependencies, TOR / delivery, customer acceptance, finance, risks/issues, documents/decisions, tasks, team handover, and closure checks.
+- Project workflow pages hold the contract-opening checklist, PR/PO and vendor readiness, plan and dependencies, TOR / delivery, customer acceptance, finance, risks/issues, documents/decisions, tasks, team handover, and closure checks. Crisis / Emergency Handover adds explicit original/acting ownership, critical next actions, dependencies, acceptance by the acting owner, and audit history for urgent project transfer.
 - TOR keeps 17 stable fields, Read and Edit modes, row details, TSV paste, autosave feedback, payment allocation capped at 100%, and an audit history. Renaming a display header never changes the stored row field.
 - System Admin manages accounts, password resets, access enable/disable, and membership across projects. Project OWNER and EDITOR membership rules are enforced by the API; the final OWNER cannot be removed.
 

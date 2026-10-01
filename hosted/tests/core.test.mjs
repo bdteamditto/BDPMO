@@ -70,3 +70,21 @@ test('Health links resolve to the exact blocker, reminder or TOR page',()=>{
  record('opening',{kind:'STAMP_DUTY',status:'DONE',evidence:'Receipt'});
  assert.deepEqual(health(p).target,{view:'lifecycle',type:'checklist',phase:'Planning',id:'risk_assessment'});
 });
+
+test('Crisis handover requires project members, notifies the acting owner and records acceptance',()=>{
+ const {w,act,project}=setup();
+ assert.throws(()=>act('crisis_handover',{active:true,originalOwner:'owner',actingOwner:'outsider',reason:'Owner unavailable',criticalNextActions:'Continue SIT'}),e=>e.status===403);
+ act('crisis_handover',{active:true,originalOwner:'owner',actingOwner:'editor',reason:'Owner unavailable',criticalNextActions:'Complete SIT and prepare UAT deployment',waiting:'Vendor contract is with Legal',contacts:'Legal / Vendor / Customer PM',latestCommunication:'Vendor information sent to Legal',links:'https://docs.example/handover'});
+ let p=project();
+ assert.equal(p.crisis.active,true);
+ assert.equal(p.crisis.actingOwner,'editor');
+ assert.equal(p.crisis.acceptedAt,'');
+ assert.ok(p.crisis.activatedAt);
+ assert.match(w.state('editor').notifications[0].text,/Crisis Handover/);
+ assert.throws(()=>act('crisis_accept',{},'viewer'),e=>e.status===403);
+ act('crisis_accept',{},'editor');
+ p=project();assert.ok(p.crisis.acceptedAt);
+ assert.equal(w.data.events.at(-1).action,'crisis_accept');
+ act('crisis_handover',{active:false,originalOwner:'owner',actingOwner:'editor',reason:p.crisis.reason,criticalNextActions:p.crisis.criticalNextActions,waiting:p.crisis.waiting,contacts:p.crisis.contacts,latestCommunication:p.crisis.latestCommunication,links:p.crisis.links});
+ p=project();assert.equal(p.crisis.active,false);assert.ok(p.crisis.closedAt);
+});

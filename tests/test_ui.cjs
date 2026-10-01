@@ -241,3 +241,22 @@ test('Project health badge opens its exact problem and on-track goes to TOR',asy
  await run('openHealthTarget(selected)');assert.equal(run('view'),'tor');
  assert.match(run('homeDashboard()'),/ตามแผน<\/span><strong>1<\/strong>/);
 });
+
+test('Crisis handover is visible on Home, Overview and Team with an explicit acceptance action',()=>{
+ const {run}=lifecycleApp();
+ run(`pnow().crisis={active:true,originalOwner:'demo',actingOwner:'demo',reason:'Project owner unavailable',criticalNextActions:'Complete SIT; prepare UAT deployment',waiting:'Vendor contract with Legal',contacts:'Legal / Vendor / Customer PM',latestCommunication:'Vendor data sent to Legal',links:'https://docs.example/handover',activatedAt:'2026-10-01T00:00:00Z',acceptedAt:'',closedAt:''}`);
+ let html=run('homeDashboard()');
+ assert.match(html,/Crisis Handover<\/span><strong>1<\/strong>/);
+ assert.match(html,/CRISIS/);
+ html=run('homeView(pnow())');
+ assert.match(html,/CRISIS HANDOVER ACTIVE/);
+ assert.match(html,/Complete SIT; prepare UAT deployment/);
+ html=run('teamView(pnow())');
+ assert.match(html,/CRISIS \/ EMERGENCY HANDOVER/);
+ assert.match(html,/ผู้รับช่วง/);
+ assert.match(html,/Vendor contract with Legal/);
+ assert.match(html,/id="acceptCrisis"/);
+ run("modal=(title,html,save)=>{captured={title,html,save}};crisisHandoverForm()");
+ assert.match(run('captured.html'),/name="actingOwner"/);
+ assert.match(run('captured.html'),/Critical Next Actions/);
+});
